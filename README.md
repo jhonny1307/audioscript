@@ -102,7 +102,7 @@ Somewhere between curiosity and chaos, this came out.
 
 ## 🤖 Credits
 
-Made with the help of **ChatGPT**
+Made with the help of **ChatGPT** (help like this... slave labo-)
 
 ---
 
