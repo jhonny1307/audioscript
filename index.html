@@ -8,6 +8,7 @@ body { font-family: Arial; background:#111; color:#eee; padding:20px; }
 textarea, input { width:100%; margin-bottom:10px; }
 button { margin:5px 5px 5px 0; }
 .part { border:1px solid #444; padding:10px; margin:10px 0; }
+.controls { display:flex; align-items:center; gap:5px; flex-wrap:wrap; }
 .comment { border:1px dashed #666; padding:10px; margin:10px 0; color:#aaa; font-style:italic; }
 .topbar { margin-bottom:15px; }
 </style>
@@ -27,40 +28,43 @@ button { margin:5px 5px 5px 0; }
 
 <div id="parts"></div>
 
-<button onclick="generateAudio()">Generate final audio</button>
-<a id="download" style="display:none">Download</a>
+<button onclick="generateAudio(false)">Generate final audio</button>
+<button onclick="generateAudio(true)">Generate final audio (with all)</button>
 
 <hr style="border:0; border-top:1px solid #333; margin-top:40px;">
 
 <footer style="margin-top:20px; font-size:14px; color:#888; text-align:center;">
     made with AI (chatGPT),
     <a href="https://github.com/jhonny1307/audioscript-web" target="_blank" style="color:#aaa;">
-        project file (v6)
+        project file (v8.1)
     </a>
 </footer>
 
 <script>
 let parts = [];
 let chunks = {};
+let toggles = {};
 let mediaRecorder;
 let currentStream;
-let state = {}; 
+let state = {};
+let tempData = {};
 
 function autoSave(){
     const roteiro = document.getElementById("script").value;
 
     let audios = {};
-    for (let i in chunks){
-        audios[i] = chunks[i]; // já é blob, salvamos depois
-    }
-
-    // converter blobs pra base64
-    Promise.all(Object.keys(audios).map(async i => {
-        audios[i] = await blobToBase64(audios[i]);
+    Promise.all(Object.keys(chunks).map(async i => {
+        audios[i] = await blobToBase64(chunks[i]);
     })).then(()=>{
-        const data = { roteiro, audios };
+        const data = { roteiro, audios, toggles };
         localStorage.setItem("audioRoteiro", JSON.stringify(data));
     });
+}
+
+function toggleLike(i){
+    toggles[i] = toggles[i] ? 0 : 1;
+    document.getElementById(`like_${i}`).innerText = toggles[i] ? "🔴" : "⚫";
+    autoSave();
 }
 
 function splitScript() {
@@ -82,51 +86,84 @@ function splitScript() {
             return;
         }
 
+        if(toggles[i] === undefined) toggles[i] = 0;
+
         state[i] = "idle";
 
         const div = document.createElement("div");
         div.className = "part";
         div.innerHTML = `
             <p>${p}</p>
-            <button id="btn_${i}" onclick="toggleRecording(${i})">Record</button>
-            <audio controls id="audio_${i}"></audio>
+            <div class="controls">
+                <button id="like_${i}" onclick="toggleLike(${i})">${toggles[i] ? "🔴" : "⚫"}</button>
+                <button id="btn_${i}" onclick="toggleRecording(${i})">Record</button>
+                <button id="interrupt_${i}" onclick="interruptRecording(${i})" style="display:none;">Interrupt</button>
+                <audio controls id="audio_${i}"></audio>
+            </div>
         `;
         container.appendChild(div);
     });
 
-    autoSave(); // salvar ao dividir
+    autoSave();
 }
 
 async function toggleRecording(i){
     const btn = document.getElementById(`btn_${i}`);
+    const interruptBtn = document.getElementById(`interrupt_${i}`);
 
     if(state[i] === "idle" || state[i] === "recorded"){
         currentStream = await navigator.mediaDevices.getUserMedia({ audio:true });
         mediaRecorder = new MediaRecorder(currentStream);
 
-        let data = [];
+        tempData[i] = [];
 
-        mediaRecorder.ondataavailable = e => data.push(e.data);
+        mediaRecorder.ondataavailable = e => tempData[i].push(e.data);
 
         mediaRecorder.onstop = () => {
-            const blob = new Blob(data, { type:"audio/webm" });
-            chunks[i] = blob;
-            document.getElementById(`audio_${i}`).src = URL.createObjectURL(blob);
+            if(tempData[i] && tempData[i].length > 0){
+                const blob = new Blob(tempData[i], { type:"audio/webm" });
+                chunks[i] = blob;
+                document.getElementById(`audio_${i}`).src = URL.createObjectURL(blob);
+            }
+
             currentStream.getTracks().forEach(t => t.stop());
 
             state[i] = "recorded";
             btn.innerText = "Re-record";
+            interruptBtn.style.display = "none";
 
-            autoSave(); // salvar ao parar
+            autoSave();
         };
 
         mediaRecorder.start();
         state[i] = "recording";
         btn.innerText = "Stop";
+        interruptBtn.style.display = "inline-block";
     }
     else if(state[i] === "recording"){
         mediaRecorder.stop();
         btn.innerText = "Processing...";
+        interruptBtn.style.display = "none";
+    }
+}
+
+function interruptRecording(i){
+    if(mediaRecorder && state[i] === "recording"){
+        mediaRecorder.onstop = null;
+        mediaRecorder.stop();
+
+        if(currentStream){
+            currentStream.getTracks().forEach(t => t.stop());
+        }
+
+        tempData[i] = [];
+
+        const btn = document.getElementById(`btn_${i}`);
+        const interruptBtn = document.getElementById(`interrupt_${i}`);
+
+        state[i] = chunks[i] ? "recorded" : "idle";
+        btn.innerText = chunks[i] ? "Re-record" : "Record";
+        interruptBtn.style.display = "none";
     }
 }
 
@@ -140,10 +177,9 @@ window.onload = function(){
     if(!data) return;
 
     document.getElementById("script").value = data.roteiro;
+    toggles = data.toggles || {};
 
     splitScript();
-
-    chunks = {};
 
     for (let i in data.audios){
         const blob = base64ToBlob(data.audios[i]);
@@ -156,13 +192,14 @@ window.onload = function(){
     }
 };
 
-async function generateAudio(){
+async function generateAudio(useAll){
     const gap = parseInt(document.getElementById("gap").value) || 0;
     const ctx = new AudioContext();
     let buffers = [];
 
     for(let i=0;i<parts.length;i++){
         if(!chunks[i]) continue;
+        if(!useAll && !toggles[i]) continue;
 
         try {
             const arrayBuffer = await chunks[i].arrayBuffer();
@@ -174,7 +211,7 @@ async function generateAudio(){
     }
 
     if(buffers.length === 0){
-        alert("No audio recorded");
+        alert("No audio selected");
         return;
     }
 
@@ -191,11 +228,15 @@ async function generateAudio(){
     const wav = bufferToWav(output);
     const blob = new Blob([wav], { type:"audio/wav" });
 
-    const link = document.getElementById("download");
-    link.href = URL.createObjectURL(blob);
-    link.download = "final.wav";
-    link.style.display = "block";
-    link.innerText = "Download audio";
+    // DOWNLOAD DIRETO
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "final.wav";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
 }
 
 function bufferToWav(buffer) {
