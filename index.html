@@ -22,9 +22,9 @@ textarea, input {
 }
 
 button {
-    margin:5px 5px 5px 0;
-    padding:8px 12px;
-    font-size:14px;
+    margin:4px 4px 4px 0;
+    padding:6px 10px;
+    font-size:13px;
 }
 
 .part {
@@ -38,7 +38,7 @@ button {
     margin-top:10px;
     display:flex;
     flex-wrap:wrap;
-    gap:5px;
+    gap:4px;
 }
 
 audio {
@@ -61,13 +61,16 @@ audio {
 /* 📱 MOBILE */
 @media (max-width:600px){
     body { padding:10px; }
+
     button {
-        flex:1 1 100%;
-        font-size:16px;
-        padding:10px;
+        flex:1 1 auto;
+        font-size:14px;
+        padding:8px;
     }
+
     .controls {
-        flex-direction:column;
+        flex-direction:row;
+        flex-wrap:wrap;
     }
 }
 </style>
@@ -96,7 +99,7 @@ audio {
 <footer style="margin-top:20px; font-size:14px; color:#888; text-align:center;">
     made with AI (chatGPT),
     <a href="https://github.com/jhonny1307/audioscript-web" target="_blank" style="color:#aaa;">
-        project file (v9.1)
+        project file (v9.1.1)
     </a>
 </footer>
 
