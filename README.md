@@ -1,6 +1,6 @@
 # 🎧 Audio Script
 
-**Audio Script** is a lightweight browser-based tool for recording, organizing, and generating segmented audio from a script.
+**Audio Script** is a lightweight browser-based tool for recording, organizing, previewing, and generating segmented audio from a script.
 
 It started as a challenge:
 
@@ -18,15 +18,18 @@ Long answer: yes… and it kept getting better.
 * 🔁 Re-record any segment instantly
 * ⏹️ Stop or interrupt recordings safely
 * 📂 Upload external audio files (mp3, wav, etc.)
-* ❤️ Toggle favorite segments (include/exclude in final audio)
+* ❤️ Toggle favorite segments (include/exclude in preview/export)
 * 🧠 Automatic saving (no save button needed)
 * 💾 Persistent storage using `localStorage`
 * 🧹 One-click project reset
 * 🧩 Inline comments using `//`
 
   * Displayed as visual notes (not audio)
+* 🎧 Real-time preview system (fixed player)
+* 🔄 Manual preview refresh button
 * 🔊 Merge selected segments into a single `.wav` file
-* 🔀 Option to generate using all segments (ignore toggle)
+* 🔀 Option to export all segments (ignore toggle)
+* 📥 Download individual tracks
 * ⏱️ Configurable gap between segments
 * 📱 Mobile-friendly interactions (including vibration feedback)
 * 🎨 Clean UI with improved readability and structure
@@ -35,7 +38,7 @@ Long answer: yes… and it kept getting better.
 
 ## 🧠 How to Use
 
-1. Paste your script into the text box
+1. Paste your script into the text box  
 2. Add comments using `//` when needed:
 ```
 Line 1
@@ -43,22 +46,25 @@ Line 2
 // pause here
 Line 3
 ```
-3. Click **Split**
-4. Record or upload audio for each segment
-5. Optionally mark preferred segments using the toggle
-6. Click:
-- **Generate final audio** (selected only)
-- **Generate final audio (with all)** (ignores toggle)
-7. Download your final file automatically
+
+3. Click **Split**  
+4. Record or upload audio for each segment  
+5. Optionally mark preferred segments using the toggle  
+
+6. Use the **Preview player (bottom-right)** to listen  
+
+7. Export:
+- **Download Selected** → only toggled tracks  
+- **Download All** → ignores toggle  
 
 ---
 
 ## 💾 Saving System
 
-* Everything is saved automatically
-* Uses browser `localStorage`
-* No accounts, no backend, no tracking
-* Reopening the page restores your project instantly
+* Everything is saved automatically  
+* Uses browser `localStorage`  
+* No accounts, no backend, no tracking  
+* Reopening the page restores your project instantly  
 
 ---
 
@@ -66,8 +72,8 @@ Line 3
 
 The **Clear** button:
 
-* Deletes all saved data
-* Reloads the page instantly
+* Deletes all saved data  
+* Reloads the page instantly  
 
 There is no undo.  
 There is only regret.
@@ -76,11 +82,11 @@ There is only regret.
 
 ## 🧱 Tech Stack
 
-* HTML
-* CSS
-* JavaScript (Vanilla)
-* Web Audio API
-* MediaRecorder API
+* HTML  
+* CSS  
+* JavaScript (Vanilla)  
+* Web Audio API  
+* MediaRecorder API  
 
 No frameworks. No dependencies. No excuses.
 
@@ -123,12 +129,9 @@ Seriously.
 
 ---
 
-## 📌 Latest Update - V10  
-**Date:** `27/04/2026`
-
-## 📌 Latest Update - V10  
+## 📌 Latest Update - V11  
 **Date:** `27/04/2026`
 
 | ➕ Added | 🔧 Modified | ➖ Removed |
 |---|---|---|
-| Mobile vibration feedback<br>Button hover tooltips<br>Improved placeholder guidance | UI redesign with rounded corners<br>Background changed to `#010101`<br>Buttons styled with previous background color<br>Title updated to **🎤AudioScript web**<br>Improved spacing between comments and audio segments<br>Input fields adapted to dark theme | asfdiahbsfdijasosifaois |
+| Fixed preview player (always visible)<br>Manual preview refresh button (🔄)<br>Download individual tracks | Preview system replaces old generation flow<br>Export buttons renamed to **Download Selected** / **Download All**<br>Preview auto-updates on recording, upload, toggle, and gap change<br>Layout adjusted for floating preview (extra bottom spacing) | Generate final audio button<br>Old static preview behavior |
