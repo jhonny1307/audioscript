@@ -75,10 +75,21 @@ audio {
 .comment {
     border:1px dashed #444;
     padding:12px;
-    margin:25px 0;
+    margin:30px 0;
     color:#aaa;
     font-style:italic;
     border-radius:8px;
+}
+
+.preview {
+    border:1px solid #444;
+    padding:15px;
+    margin:30px 0;
+    border-radius:12px;
+}
+
+.preview h3 {
+    margin-bottom:10px;
 }
 
 .topbar {
@@ -96,26 +107,34 @@ audio {
 Create comments using '//' before the comment"></textarea>
 
 <div class="topbar">
-    <button onclick="splitScript()" title="Split script into audio tracks">Split</button>
-    <button onclick="clearProject()" title="Clear all saved data">Clear</button>
+    <button onclick="splitScript()">Split</button>
+    <button onclick="clearProject()">Clear</button>
 </div>
 
 <h3 title="Time between tracks in the final audio when generated (1s = 1000ms)">
-    Gap between tracks (ms)
+Gap between tracks (ms)
 </h3>
 <input type="number" id="gap" value="0">
 
 <div id="parts"></div>
 
-<button onclick="generateAudio(false)" title="Generate audio using only selected tracks">Generate final audio</button>
-<button onclick="generateAudio(true)" title="Generate audio using all tracks">Generate final audio (with all)</button>
+<!-- PREVIEW -->
+<div class="preview">
+    <h3 title="Preview of selected audio segments">Preview</h3>
+    <audio controls id="previewPlayer"></audio>
+
+    <div class="controls">
+        <button onclick="generateAudio(false)">Download Selected</button>
+        <button onclick="generateAudio(true)">Download All</button>
+    </div>
+</div>
 
 <hr style="border:0; border-top:1px solid #222; margin-top:40px;">
 
 <footer style="margin-top:20px; font-size:14px; color:#888; text-align:center;">
     made with AI (chatGPT),
     <a href="https://github.com/jhonny1307/audioscript-web" target="_blank" style="color:#aaa;">
-        project file (v10)
+        project file (v11)
     </a>
 </footer>
 
@@ -125,15 +144,14 @@ function vibrate(){
         navigator.vibrate(30);
     }
 }
-
 document.addEventListener("click", vibrate);
 
 let parts = [];
 let chunks = {};
 let toggles = {};
+let state = {};
 let mediaRecorder;
 let currentStream;
-let state = {};
 let tempData = {};
 
 function autoSave(){
@@ -143,32 +161,39 @@ function autoSave(){
     Promise.all(Object.keys(chunks).map(async i => {
         audios[i] = await blobToBase64(chunks[i]);
     })).then(()=>{
-        const data = { roteiro, audios, toggles };
-        localStorage.setItem("audioRoteiro", JSON.stringify(data));
+        localStorage.setItem("audioRoteiro", JSON.stringify({
+            roteiro, audios, toggles
+        }));
     });
+}
+
+function updatePreview(){
+    generateAudio(false, true);
 }
 
 function toggleLike(i){
     toggles[i] = toggles[i] ? 0 : 1;
     document.getElementById(`like_${i}`).innerText = toggles[i] ? "🔴" : "⚫";
     autoSave();
+    updatePreview();
 }
 
-function splitScript() {
+function splitScript(){
     const text = document.getElementById("script").value;
     parts = text.split("\n").filter(p => p.trim() !== "");
     const container = document.getElementById("parts");
+
     container.innerHTML = "";
     chunks = {};
     state = {};
 
-    parts.forEach((p, i) => {
+    parts.forEach((p,i)=>{
         const trimmed = p.trim();
 
         if(trimmed.startsWith("//")){
             const div = document.createElement("div");
             div.className = "comment";
-            div.innerText = trimmed.replace("//", "").trim();
+            div.innerText = trimmed.replace("//","").trim();
             container.appendChild(div);
             return;
         }
@@ -178,33 +203,44 @@ function splitScript() {
 
         const div = document.createElement("div");
         div.className = "part";
+
         div.innerHTML = `
             <p>${p}</p>
-
             <audio controls id="audio_${i}"></audio>
 
             <div class="controls">
-                <button title="Mark as good/bad" id="like_${i}" onclick="toggleLike(${i})">${toggles[i] ? "🔴" : "⚫"}</button>
-                <button title="Start or stop recording" id="btn_${i}" onclick="toggleRecording(${i})">Record</button>
-                <button title="Cancel recording" id="interrupt_${i}" onclick="interruptRecording(${i})" style="display:none;">Interrupt</button>
-                <button title="Upload external audio" id="upload_${i}" onclick="uploadAudio(${i})">Upload</button>
+                <button onclick="toggleLike(${i})" id="like_${i}">
+                    ${toggles[i] ? "🔴" : "⚫"}
+                </button>
+                <button onclick="toggleRecording(${i})" id="btn_${i}">
+                    Record
+                </button>
+                <button onclick="interruptRecording(${i})" id="interrupt_${i}" style="display:none;">
+                    Interrupt
+                </button>
+                <button onclick="uploadAudio(${i})">Upload</button>
+                <button onclick="downloadTrack(${i})">Download</button>
                 <input type="file" id="file_${i}" accept="audio/*" style="display:none;">
             </div>
         `;
+
         container.appendChild(div);
 
-        document.getElementById(`file_${i}`).addEventListener("change", (e)=>{
+        document.getElementById(`file_${i}`).addEventListener("change",(e)=>{
             const file = e.target.files[0];
             if(!file) return;
 
             const blob = new Blob([file], { type:file.type });
             chunks[i] = blob;
-            document.getElementById(`audio_${i}`).src = URL.createObjectURL(blob);
+
+            document.getElementById(`audio_${i}`).src =
+                URL.createObjectURL(blob);
 
             state[i] = "recorded";
             document.getElementById(`btn_${i}`).innerText = "Re-record";
 
             autoSave();
+            updatePreview();
         });
     });
 
@@ -215,12 +251,22 @@ function uploadAudio(i){
     document.getElementById(`file_${i}`).click();
 }
 
+function downloadTrack(i){
+    if(!chunks[i]) return;
+
+    const url = URL.createObjectURL(chunks[i]);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `track_${i}.wav`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
 async function toggleRecording(i){
     const btn = document.getElementById(`btn_${i}`);
     const interruptBtn = document.getElementById(`interrupt_${i}`);
-    const uploadBtn = document.getElementById(`upload_${i}`);
 
-    if(state[i] === "idle" || state[i] === "recorded"){
+    if(state[i] !== "recording"){
         currentStream = await navigator.mediaDevices.getUserMedia({ audio:true });
         mediaRecorder = new MediaRecorder(currentStream);
 
@@ -228,56 +274,49 @@ async function toggleRecording(i){
 
         mediaRecorder.ondataavailable = e => tempData[i].push(e.data);
 
-        mediaRecorder.onstop = () => {
+        mediaRecorder.onstop = ()=>{
             if(tempData[i].length){
                 const blob = new Blob(tempData[i], { type:"audio/webm" });
                 chunks[i] = blob;
-                document.getElementById(`audio_${i}`).src = URL.createObjectURL(blob);
+
+                document.getElementById(`audio_${i}`).src =
+                    URL.createObjectURL(blob);
             }
 
-            currentStream.getTracks().forEach(t => t.stop());
+            currentStream.getTracks().forEach(t=>t.stop());
 
             state[i] = "recorded";
             btn.innerText = "Re-record";
             interruptBtn.style.display = "none";
-            uploadBtn.style.display = "inline-block";
 
             autoSave();
+            updatePreview();
         };
 
         mediaRecorder.start();
         state[i] = "recording";
         btn.innerText = "Stop";
         interruptBtn.style.display = "inline-block";
-        uploadBtn.style.display = "none";
-    }
-    else if(state[i] === "recording"){
+    } else {
         mediaRecorder.stop();
         btn.innerText = "Processing...";
-        interruptBtn.style.display = "none";
     }
 }
 
 function interruptRecording(i){
-    if(mediaRecorder && state[i] === "recording"){
-        mediaRecorder.onstop = null;
-        mediaRecorder.stop();
+    if(state[i] !== "recording") return;
 
-        if(currentStream){
-            currentStream.getTracks().forEach(t => t.stop());
-        }
+    mediaRecorder.onstop = null;
+    mediaRecorder.stop();
 
-        tempData[i] = [];
+    currentStream.getTracks().forEach(t=>t.stop());
 
-        const btn = document.getElementById(`btn_${i}`);
-        const interruptBtn = document.getElementById(`interrupt_${i}`);
-        const uploadBtn = document.getElementById(`upload_${i}`);
+    state[i] = chunks[i] ? "recorded" : "idle";
 
-        state[i] = chunks[i] ? "recorded" : "idle";
-        btn.innerText = chunks[i] ? "Re-record" : "Record";
-        interruptBtn.style.display = "none";
-        uploadBtn.style.display = "inline-block";
-    }
+    document.getElementById(`btn_${i}`).innerText =
+        chunks[i] ? "Re-record" : "Record";
+
+    document.getElementById(`interrupt_${i}`).style.display = "none";
 }
 
 function clearProject(){
@@ -294,66 +333,78 @@ window.onload = function(){
 
     splitScript();
 
-    for (let i in data.audios){
+    for(let i in data.audios){
         const blob = base64ToBlob(data.audios[i]);
         chunks[i] = blob;
-        document.getElementById(`audio_${i}`).src = URL.createObjectURL(blob);
+
+        document.getElementById(`audio_${i}`).src =
+            URL.createObjectURL(blob);
+
         state[i] = "recorded";
         document.getElementById(`btn_${i}`).innerText = "Re-record";
     }
+
+    updatePreview();
 };
 
-async function generateAudio(useAll){
-    const gap = parseInt(document.getElementById("gap").value) || 0;
+async function generateAudio(useAll, preview=false){
+    const gap = parseInt(document.getElementById("gap").value)||0;
     const ctx = new AudioContext();
-    let buffers = [];
+    let buffers=[];
 
     for(let i=0;i<parts.length;i++){
         if(!chunks[i]) continue;
         if(!useAll && !toggles[i]) continue;
 
-        try {
-            const buffer = await ctx.decodeAudioData(await chunks[i].arrayBuffer());
-            buffers.push(buffer);
-        } catch(e){}
+        const buffer = await ctx.decodeAudioData(await chunks[i].arrayBuffer());
+        buffers.push(buffer);
     }
 
-    if(!buffers.length){
-        alert("No audio selected");
-        return;
-    }
+    if(!buffers.length) return;
 
-    let totalLength = buffers.reduce((a,b)=>a+b.length,0) + (gap/1000 * ctx.sampleRate * buffers.length);
-    let output = ctx.createBuffer(1, totalLength, ctx.sampleRate);
+    let totalLength = buffers.reduce((a,b)=>a+b.length,0) +
+        (gap/1000 * ctx.sampleRate * buffers.length);
 
-    let offset = 0;
+    let output = ctx.createBuffer(1,totalLength,ctx.sampleRate);
+
+    let offset=0;
+
     buffers.forEach(b=>{
-        output.getChannelData(0).set(b.getChannelData(0), offset);
+        output.getChannelData(0).set(b.getChannelData(0),offset);
         offset += b.length + (gap/1000 * ctx.sampleRate);
     });
 
     const wav = bufferToWav(output);
-    const blob = new Blob([wav], { type:"audio/wav" });
+    const blob = new Blob([wav],{type:"audio/wav"});
+
+    if(preview){
+        document.getElementById("previewPlayer").src =
+            URL.createObjectURL(blob);
+        return;
+    }
 
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url;
-    a.download = "final.wav";
+    a.href=url;
+    a.download="final.wav";
     a.click();
     URL.revokeObjectURL(url);
 }
 
-function bufferToWav(buffer) {
-    let length = buffer.length * 2 + 44;
-    let arrayBuffer = new ArrayBuffer(length);
-    let view = new DataView(arrayBuffer);
+function bufferToWav(buffer){
+    let length = buffer.length*2+44;
+    let arr = new ArrayBuffer(length);
+    let view = new DataView(arr);
 
-    function writeString(v,o,s){ for(let i=0;i<s.length;i++) v.setUint8(o+i,s.charCodeAt(i)); }
+    function write(v,o,s){
+        for(let i=0;i<s.length;i++)
+            v.setUint8(o+i,s.charCodeAt(i));
+    }
 
-    writeString(view,0,"RIFF");
-    view.setUint32(4,36 + buffer.length*2,true);
-    writeString(view,8,"WAVE");
-    writeString(view,12,"fmt ");
+    write(view,0,"RIFF");
+    view.setUint32(4,36+buffer.length*2,true);
+    write(view,8,"WAVE");
+    write(view,12,"fmt ");
     view.setUint32(16,16,true);
     view.setUint16(20,1,true);
     view.setUint16(22,1,true);
@@ -361,36 +412,38 @@ function bufferToWav(buffer) {
     view.setUint32(28,buffer.sampleRate*2,true);
     view.setUint16(32,2,true);
     view.setUint16(34,16,true);
-    writeString(view,36,"data");
+    write(view,36,"data");
     view.setUint32(40,buffer.length*2,true);
 
-    let offset = 44;
-    let data = buffer.getChannelData(0);
+    let offset=44;
+    let data=buffer.getChannelData(0);
 
     for(let i=0;i<data.length;i++,offset+=2){
-        let s = Math.max(-1, Math.min(1, data[i]));
-        view.setInt16(offset, s<0 ? s*0x8000 : s*0x7FFF, true);
+        let s=Math.max(-1,Math.min(1,data[i]));
+        view.setInt16(offset,s<0?s*0x8000:s*0x7FFF,true);
     }
 
-    return arrayBuffer;
+    return arr;
 }
 
 function blobToBase64(blob){
-    return new Promise(resolve=>{
-        const r = new FileReader();
-        r.onloadend = ()=>resolve(r.result);
-        r.readAsDataURL(blob);
+    return new Promise(r=>{
+        const reader=new FileReader();
+        reader.onloadend=()=>r(reader.result);
+        reader.readAsDataURL(blob);
     });
 }
 
 function base64ToBlob(base64){
-    const arr = base64.split(',');
-    const mime = arr[0].match(/:(.*?);/)[1];
-    const bstr = atob(arr[1]);
-    let n = bstr.length;
-    const u8 = new Uint8Array(n);
-    while(n--) u8[n] = bstr.charCodeAt(n);
-    return new Blob([u8], {type:mime});
+    const arr=base64.split(',');
+    const mime=arr[0].match(/:(.*?);/)[1];
+    const bstr=atob(arr[1]);
+    let n=bstr.length;
+    const u8=new Uint8Array(n);
+
+    while(n--) u8[n]=bstr.charCodeAt(n);
+
+    return new Blob([u8],{type:mime});
 }
 </script>
 
