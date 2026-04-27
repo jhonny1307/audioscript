@@ -94,20 +94,12 @@ audio {
     box-shadow:0 0 10px rgba(0,0,0,0.8);
     z-index:999;
 }
-
-.preview audio {
-    width:100%;
-}
-
-.topbar {
-    margin-bottom:15px;
-}
 </style>
 </head>
 <body>
 
 <h2 title="Tool to create, organize and generate audio scripts">
-🎤AudioScript <span>web</span>
+    🎤AudioScript <span>web</span>
 </h2>
 
 <textarea id="script" rows="6" placeholder="Paste your script here or start creating now...
@@ -121,7 +113,7 @@ Create comments using '//' before the comment"></textarea>
 <h3 title="Time between tracks in the final audio when generated (1s = 1000ms)">
 Gap between tracks (ms)
 </h3>
-<input type="number" id="gap" value="0">
+<input type="number" id="gap" value="0" onchange="updatePreview()">
 
 <div id="parts"></div>
 
@@ -130,9 +122,9 @@ Gap between tracks (ms)
     <audio controls id="previewPlayer"></audio>
 
     <div class="controls">
-        <button onclick="updatePreview()" title="Refresh preview">🔄</button>
-        <button onclick="generateAudio(false)" title="Download selected tracks">Download Selected</button>
-        <button onclick="generateAudio(true)" title="Download all tracks">Download All</button>
+        <button title="Refresh preview manually" onclick="updatePreview()">🔄</button>
+        <button title="Download only selected tracks" onclick="generateAudio(false)">Download Selected</button>
+        <button title="Download all tracks" onclick="generateAudio(true)">Download All</button>
     </div>
 </div>
 
@@ -216,7 +208,7 @@ function splitScript(){
             <audio controls id="audio_${i}"></audio>
 
             <div class="controls">
-                <button onclick="toggleLike(${i})">${toggles[i] ? "🔴" : "⚫"}</button>
+                <button onclick="toggleLike(${i})" id="like_${i}">${toggles[i] ? "🔴" : "⚫"}</button>
                 <button onclick="toggleRecording(${i})" id="btn_${i}">Record</button>
                 <button onclick="interruptRecording(${i})" id="interrupt_${i}" style="display:none;">Interrupt</button>
                 <button onclick="uploadAudio(${i})">Upload</button>
@@ -246,7 +238,6 @@ function splitScript(){
     });
 
     autoSave();
-    updatePreview();
 }
 
 function uploadAudio(i){
