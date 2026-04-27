@@ -126,27 +126,9 @@ Seriously.
 ## 📌 Latest Update - V10  
 **Date:** `27/04/2026`
 
-### ➕ Added
-- Audio upload support per segment
-- Toggle system (select which audios are used)
-- Generate audio with all segments option
-- Interrupt recording functionality
-- Automatic saving system
-- Mobile vibration feedback
-- Button tooltips (hover help)
-- Improved placeholder guidance
-- Visual comments spacing improvements
+## 📌 Latest Update - V10  
+**Date:** `27/04/2026`
 
-### 🔧 Modified
-- UI redesign (rounded corners, darker theme)
-- Background updated to `#010101`
-- Buttons styled with consistent theme
-- Layout restructuring (text → audio → controls)
-- Input fields redesigned for dark mode
-- Title updated to **🎤AudioScript web**
-- Improved spacing and readability
-
-### ➖ Removed
-- Manual save button
-- Manual load button
-- Separate download step (now automatic)
+| ➕ Added | 🔧 Modified | ➖ Removed |
+|----------|-------------|------------|
+| Mobile vibration feedback<br>Button hover tooltips<br>Improved placeholder guidance<br>Better spacing between comments and audio tracks | UI redesign with rounded corners<br>Background changed to `#010101`<br>Buttons styled with previous background color<br>Inputs redesigned for dark mode<br>Title updated to **🎤AudioScript web**<br>Layout improved (text → audio → controls) | nada |
