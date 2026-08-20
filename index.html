@@ -4,441 +4,57 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Audio Script</title>
-
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <style>
-body {
-    font-family: Arial;
-    background:#010101;
-    color:#eee;
-    padding:15px;
-    padding-bottom:240px;
-    max-width:900px;
-    margin:auto;
-}
-
-h2 {
-    display:flex;
-    align-items:flex-end;
-    gap:10px;
-}
-
-h2 span {
-    font-size:50%;
-    color:#888;
-}
-
-textarea, input {
-    width:100%;
-    margin-bottom:10px;
-    font-size:14px;
-    border-radius:6px;
-    background:#111;
-    color:#eee;
-    border:1px solid #333;
-    padding:8px;
-}
-
-button {
-    margin:4px 4px 4px 0;
-    padding:6px 10px;
-    font-size:13px;
-    border:none;
-    border-radius:6px;
-    background:#111;
-    color:#eee;
-    cursor:pointer;
-    transition:0.2s;
-}
-
-button:hover {
-    background:#222;
-}
-
-.part {
-    border:1px solid #333;
-    padding:12px;
-    margin:20px 0;
-    border-radius:10px;
-}
-
-.controls {
-    margin-top:10px;
-    display:flex;
-    flex-wrap:wrap;
-    gap:4px;
-}
-
-audio {
-    width:100%;
-    margin-top:10px;
-}
-
-.comment {
-    border:1px dashed #444;
-    padding:12px;
-    margin:30px 0;
-    color:#aaa;
-    font-style:italic;
-    border-radius:8px;
-}
-
-.preview {
-    position:fixed;
-    bottom:10px;
-    right:10px;
-    width:300px;
-    border:1px solid #444;
-    padding:12px;
-    border-radius:12px;
-    background:#0a0a0a;
-    box-shadow:0 0 10px rgba(0,0,0,0.8);
-    z-index:999;
-}
+body{font-family:Arial;background:#010101;color:#eee;padding:15px;padding-bottom:240px;max-width:900px;margin:auto}
+h2{display:flex;align-items:flex-end;gap:10px} h2 span{font-size:50%;color:#888}
+textarea,input{width:100%;margin-bottom:10px;font-size:14px;border-radius:6px;background:#111;color:#eee;border:1px solid #333;padding:8px}
+button{margin:4px 4px 4px 0;padding:6px 10px;font-size:13px;border:none;border-radius:6px;background:#111;color:#eee;cursor:pointer;transition:.2s}button:hover{background:#222}
+.part{border:1px solid #333;padding:12px;margin:20px 0;border-radius:10px}.controls{margin-top:10px;display:flex;flex-wrap:wrap;gap:4px}audio{width:100%;margin-top:10px}
+.comment{border:1px dashed #444;padding:12px;margin:30px 0;color:#aaa;font-style:italic;border-radius:8px}
+.preview{position:fixed;bottom:10px;right:10px;width:300px;border:1px solid #444;padding:12px;border-radius:12px;background:#0a0a0a;box-shadow:0 0 10px rgba(0,0,0,.8);z-index:999}
 </style>
 </head>
 <body>
-
-<h2 title="Tool to create, organize and generate audio scripts">
-    🎤AudioScript <span>web</span>
-</h2>
-
+<h2 title="Tool to create, organize and generate audio scripts">🎤AudioScript <span>web</span></h2>
 <textarea id="script" rows="6" placeholder="Paste your script here or start creating now...
 Create comments using '//' before the comment"></textarea>
-
-<div class="topbar">
-    <button onclick="splitScript()">Split</button>
-    <button onclick="clearProject()">Clean</button>
-</div>
-
-<h3 title="Time between tracks in the final audio when generated (1s = 1000ms)">
-Gap between tracks (ms)
-</h3>
+<div class="topbar"><button onclick="splitScript()">Split</button><button onclick="clearProject()">Clean</button></div>
+<h3 title="Time between tracks in the final audio when generated (1s = 1000ms)">Gap between tracks (ms)</h3>
 <input type="number" id="gap" value="0" onchange="updatePreview()">
-
 <div id="parts"></div>
-
 <div class="preview">
-    <h3 title="Preview of selected audio segments">Preview</h3>
-    <audio controls id="previewPlayer"></audio>
-
-    <div class="controls">
-        <button title="Refresh preview manually" onclick="updatePreview()">🔄</button>
-        <button title="Download only selected tracks" onclick="generateAudio(false)">Download Selected</button>
-        <button title="Download all tracks" onclick="generateAudio(true)">Download All</button>
-    </div>
+<h3 title="Preview of selected audio segments">Preview</h3>
+<audio controls id="previewPlayer"></audio>
+<div class="controls">
+<button title="Refresh preview manually" onclick="updatePreview()">🔄</button>
+<button title="Download only selected tracks as separate files" onclick="exportZip(false)">Export Selected ZIP</button>
+<button title="Download all tracks as separate files" onclick="exportZip(true)">Export All ZIP</button>
 </div>
-
-<hr style="border:0; border-top:1px solid #222; margin-top:40px;">
-
-<footer style="margin-top:20px; font-size:14px; color:#888; text-align:center;">
-    made with AI (chatGPT),
-    <a href="https://github.com/jhonny1307/audioscript-web" target="_blank" style="color:#aaa;">
-        project file (v11.1)
-    </a>
-</footer>
-
+</div>
+<hr style="border:0;border-top:1px solid #222;margin-top:40px;">
+<footer style="margin-top:20px;font-size:14px;color:#888;text-align:center;">made with AI (chatGPT), <a href="https://github.com/jhonny1307/audioscript-web" target="_blank" style="color:#aaa;">project file (v12)</a></footer>
 <script>
-function vibrate(){
-    if(navigator.vibrate){
-        navigator.vibrate(30);
-    }
-}
-document.addEventListener("click", vibrate);
-
-let parts = [];
-let chunks = {};
-let toggles = {};
-let state = {};
-let mediaRecorder;
-let currentStream;
-let tempData = {};
-
-function autoSave(){
-    const roteiro = document.getElementById("script").value;
-
-    let audios = {};
-    Promise.all(Object.keys(chunks).map(async i => {
-        audios[i] = await blobToBase64(chunks[i]);
-    })).then(()=>{
-        localStorage.setItem("audioRoteiro", JSON.stringify({
-            roteiro, audios, toggles
-        }));
-    });
-}
-
-function updatePreview(){
-    generateAudio(false, true);
-}
-
-function toggleLike(i){
-    toggles[i] = toggles[i] ? 0 : 1;
-    document.getElementById(`like_${i}`).innerText = toggles[i] ? "🔴" : "⚫";
-    autoSave();
-    updatePreview();
-}
-
-function splitScript(){
-    const text = document.getElementById("script").value;
-    parts = text.split("\n").filter(p => p.trim() !== "");
-    const container = document.getElementById("parts");
-
-    container.innerHTML = "";
-    chunks = {};
-    state = {};
-
-    parts.forEach((p,i)=>{
-        const trimmed = p.trim();
-
-        if(trimmed.startsWith("//")){
-            const div = document.createElement("div");
-            div.className = "comment";
-            div.innerText = trimmed.replace("//","").trim();
-            container.appendChild(div);
-            return;
-        }
-
-        if(toggles[i] === undefined) toggles[i] = 0;
-        state[i] = "idle";
-
-        const div = document.createElement("div");
-        div.className = "part";
-
-        div.innerHTML = `
-            <p>${p}</p>
-            <audio controls id="audio_${i}"></audio>
-
-            <div class="controls">
-                <button onclick="toggleLike(${i})" id="like_${i}">${toggles[i] ? "🔴" : "⚫"}</button>
-                <button onclick="toggleRecording(${i})" id="btn_${i}">Record</button>
-                <button onclick="interruptRecording(${i})" id="interrupt_${i}" style="display:none;">Interrupt</button>
-                <button onclick="uploadAudio(${i})">Upload</button>
-                <button onclick="downloadTrack(${i})">Download</button>
-                <input type="file" id="file_${i}" accept="audio/*" style="display:none;">
-            </div>
-        `;
-
-        container.appendChild(div);
-
-        document.getElementById(`file_${i}`).addEventListener("change",(e)=>{
-            const file = e.target.files[0];
-            if(!file) return;
-
-            const blob = new Blob([file], { type:file.type });
-            chunks[i] = blob;
-
-            document.getElementById(`audio_${i}`).src =
-                URL.createObjectURL(blob);
-
-            state[i] = "recorded";
-            document.getElementById(`btn_${i}`).innerText = "Re-record";
-
-            autoSave();
-            updatePreview();
-        });
-    });
-
-    autoSave();
-}
-
-function uploadAudio(i){
-    document.getElementById(`file_${i}`).click();
-}
-
-function downloadTrack(i){
-    if(!chunks[i]) return;
-
-    const url = URL.createObjectURL(chunks[i]);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `track_${i}.wav`;
-    a.click();
-    URL.revokeObjectURL(url);
-}
-
-async function toggleRecording(i){
-    const btn = document.getElementById(`btn_${i}`);
-    const interruptBtn = document.getElementById(`interrupt_${i}`);
-
-    if(state[i] !== "recording"){
-        currentStream = await navigator.mediaDevices.getUserMedia({ audio:true });
-        mediaRecorder = new MediaRecorder(currentStream);
-
-        tempData[i] = [];
-
-        mediaRecorder.ondataavailable = e => tempData[i].push(e.data);
-
-        mediaRecorder.onstop = ()=>{
-            if(tempData[i].length){
-                const blob = new Blob(tempData[i], { type:"audio/webm" });
-                chunks[i] = blob;
-
-                document.getElementById(`audio_${i}`).src =
-                    URL.createObjectURL(blob);
-            }
-
-            currentStream.getTracks().forEach(t=>t.stop());
-
-            state[i] = "recorded";
-            btn.innerText = "Re-record";
-            interruptBtn.style.display = "none";
-
-            autoSave();
-            updatePreview();
-        };
-
-        mediaRecorder.start();
-        state[i] = "recording";
-        btn.innerText = "Stop";
-        interruptBtn.style.display = "inline-block";
-    } else {
-        mediaRecorder.stop();
-        btn.innerText = "Processing...";
-    }
-}
-
-function interruptRecording(i){
-    if(state[i] !== "recording") return;
-
-    mediaRecorder.onstop = null;
-    mediaRecorder.stop();
-
-    currentStream.getTracks().forEach(t=>t.stop());
-
-    state[i] = chunks[i] ? "recorded" : "idle";
-
-    document.getElementById(`btn_${i}`).innerText =
-        chunks[i] ? "Re-record" : "Record";
-
-    document.getElementById(`interrupt_${i}`).style.display = "none";
-}
-
-function clearProject(){
-    localStorage.removeItem("audioRoteiro");
-    location.reload();
-}
-
-window.onload = function(){
-    const data = JSON.parse(localStorage.getItem("audioRoteiro"));
-    if(!data) return;
-
-    document.getElementById("script").value = data.roteiro;
-    toggles = data.toggles || {};
-
-    splitScript();
-
-    for(let i in data.audios){
-        const blob = base64ToBlob(data.audios[i]);
-        chunks[i] = blob;
-
-        document.getElementById(`audio_${i}`).src =
-            URL.createObjectURL(blob);
-
-        state[i] = "recorded";
-        document.getElementById(`btn_${i}`).innerText = "Re-record";
-    }
-
-    updatePreview();
-};
-
-async function generateAudio(useAll, preview=false){
-    const gap = parseInt(document.getElementById("gap").value)||0;
-    const ctx = new AudioContext();
-    let buffers=[];
-
-    for(let i=0;i<parts.length;i++){
-        if(!chunks[i]) continue;
-        if(!useAll && !toggles[i]) continue;
-
-        const buffer = await ctx.decodeAudioData(await chunks[i].arrayBuffer());
-        buffers.push(buffer);
-    }
-
-    if(!buffers.length) return;
-
-    let totalLength = buffers.reduce((a,b)=>a+b.length,0) +
-        (gap/1000 * ctx.sampleRate * buffers.length);
-
-    let output = ctx.createBuffer(1,totalLength,ctx.sampleRate);
-
-    let offset=0;
-
-    buffers.forEach(b=>{
-        output.getChannelData(0).set(b.getChannelData(0),offset);
-        offset += b.length + (gap/1000 * ctx.sampleRate);
-    });
-
-    const wav = bufferToWav(output);
-    const blob = new Blob([wav],{type:"audio/wav"});
-
-    if(preview){
-        document.getElementById("previewPlayer").src =
-            URL.createObjectURL(blob);
-        return;
-    }
-
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href=url;
-    a.download="final.wav";
-    a.click();
-    URL.revokeObjectURL(url);
-}
-
-function bufferToWav(buffer){
-    let length = buffer.length*2+44;
-    let arr = new ArrayBuffer(length);
-    let view = new DataView(arr);
-
-    function write(v,o,s){
-        for(let i=0;i<s.length;i++)
-            v.setUint8(o+i,s.charCodeAt(i));
-    }
-
-    write(view,0,"RIFF");
-    view.setUint32(4,36+buffer.length*2,true);
-    write(view,8,"WAVE");
-    write(view,12,"fmt ");
-    view.setUint32(16,16,true);
-    view.setUint16(20,1,true);
-    view.setUint16(22,1,true);
-    view.setUint32(24,buffer.sampleRate,true);
-    view.setUint32(28,buffer.sampleRate*2,true);
-    view.setUint16(32,2,true);
-    view.setUint16(34,16,true);
-    write(view,36,"data");
-    view.setUint32(40,buffer.length*2,true);
-
-    let offset=44;
-    let data=buffer.getChannelData(0);
-
-    for(let i=0;i<data.length;i++,offset+=2){
-        let s=Math.max(-1,Math.min(1,data[i]));
-        view.setInt16(offset,s<0?s*0x8000:s*0x7FFF,true);
-    }
-
-    return arr;
-}
-
-function blobToBase64(blob){
-    return new Promise(r=>{
-        const reader=new FileReader();
-        reader.onloadend=()=>r(reader.result);
-        reader.readAsDataURL(blob);
-    });
-}
-
-function base64ToBlob(base64){
-    const arr=base64.split(',');
-    const mime=arr[0].match(/:(.*?);/)[1];
-    const bstr=atob(arr[1]);
-    let n=bstr.length;
-    const u8=new Uint8Array(n);
-
-    while(n--) u8[n]=bstr.charCodeAt(n);
-
-    return new Blob([u8],{type:mime});
-}
+function vibrate(){if(navigator.vibrate)navigator.vibrate(30)}
+document.addEventListener("click",vibrate);
+let parts=[],chunks={},toggles={},state={},mediaRecorder,currentStream,tempData={};
+function autoSave(){const roteiro=document.getElementById("script").value;let audios={};Promise.all(Object.keys(chunks).map(async i=>{audios[i]=await blobToBase64(chunks[i])})).then(()=>localStorage.setItem("audioRoteiro",JSON.stringify({roteiro,audios,toggles})))}
+function updatePreview(){generateAudio(false,true)}
+function toggleLike(i){toggles[i]=toggles[i]?0:1;document.getElementById(`like_${i}`).innerText=toggles[i]?"🔴":"⚫";autoSave();updatePreview()}
+function splitScript(){const text=document.getElementById("script").value;parts=text.split("\n").filter(p=>p.trim()!=="");const container=document.getElementById("parts");container.innerHTML="";chunks={};state={};parts.forEach((p,i)=>{const trimmed=p.trim();if(trimmed.startsWith("//")){const div=document.createElement("div");div.className="comment";div.innerText=trimmed.replace("//","").trim();container.appendChild(div);return}if(toggles[i]===undefined)toggles[i]=0;state[i]="idle";const div=document.createElement("div");div.className="part";div.innerHTML=`<p>${p}</p><audio controls id="audio_${i}"></audio><div class="controls"><button onclick="toggleLike(${i})" id="like_${i}">${toggles[i]?"🔴":"⚫"}</button><button onclick="toggleRecording(${i})" id="btn_${i}">Record</button><button onclick="interruptRecording(${i})" id="interrupt_${i}" style="display:none;">Interrupt</button><button onclick="uploadAudio(${i})">Upload</button><button onclick="downloadTrack(${i})">Download</button><input type="file" id="file_${i}" accept="audio/*" style="display:none;"></div>`;container.appendChild(div);document.getElementById(`file_${i}`).addEventListener("change",e=>{const file=e.target.files[0];if(!file)return;const blob=new Blob([file],{type:file.type});chunks[i]=blob;document.getElementById(`audio_${i}`).src=URL.createObjectURL(blob);state[i]="recorded";document.getElementById(`btn_${i}`).innerText="Re-record";autoSave();updatePreview()})});autoSave()}
+function uploadAudio(i){document.getElementById(`file_${i}`).click()}
+function downloadTrack(i){if(!chunks[i])return;const url=URL.createObjectURL(chunks[i]),a=document.createElement("a");a.href=url;a.download=`track_${String(i+1).padStart(3,"0")}.${getExtension(chunks[i])}`;a.click();URL.revokeObjectURL(url)}
+function getExtension(blob){const type=(blob.type||"").toLowerCase();if(type.includes("wav"))return"wav";if(type.includes("mpeg")||type.includes("mp3"))return"mp3";if(type.includes("ogg"))return"ogg";if(type.includes("mp4")||type.includes("m4a"))return"m4a";return"webm"}
+async function toggleRecording(i){const btn=document.getElementById(`btn_${i}`),interruptBtn=document.getElementById(`interrupt_${i}`);if(state[i]!=="recording"){currentStream=await navigator.mediaDevices.getUserMedia({audio:true});mediaRecorder=new MediaRecorder(currentStream);tempData[i]=[];mediaRecorder.ondataavailable=e=>tempData[i].push(e.data);mediaRecorder.onstop=()=>{if(tempData[i].length){const blob=new Blob(tempData[i],{type:"audio/webm"});chunks[i]=blob;document.getElementById(`audio_${i}`).src=URL.createObjectURL(blob)}currentStream.getTracks().forEach(t=>t.stop());state[i]="recorded";btn.innerText="Re-record";interruptBtn.style.display="none";autoSave();updatePreview()};mediaRecorder.start();state[i]="recording";btn.innerText="Stop";interruptBtn.style.display="inline-block"}else{mediaRecorder.stop();btn.innerText="Processing..."}}
+function interruptRecording(i){if(state[i]!=="recording")return;mediaRecorder.onstop=null;mediaRecorder.stop();currentStream.getTracks().forEach(t=>t.stop());state[i]=chunks[i]?"recorded":"idle";document.getElementById(`btn_${i}`).innerText=chunks[i]?"Re-record":"Record";document.getElementById(`interrupt_${i}`).style.display="none"}
+function clearProject(){localStorage.removeItem("audioRoteiro");location.reload()}
+window.onload=function(){const data=JSON.parse(localStorage.getItem("audioRoteiro"));if(!data)return;document.getElementById("script").value=data.roteiro;toggles=data.toggles||{};splitScript();for(let i in data.audios){const blob=base64ToBlob(data.audios[i]);chunks[i]=blob;document.getElementById(`audio_${i}`).src=URL.createObjectURL(blob);state[i]="recorded";document.getElementById(`btn_${i}`).innerText="Re-record"}updatePreview()};
+async function getSelectedIndices(useAll){const selected=[];for(let i=0;i<parts.length;i++){if(!chunks[i])continue;if(!useAll&&!toggles[i])continue;selected.push(i)}return selected}
+async function exportZip(useAll){const indices=await getSelectedIndices(useAll);if(!indices.length)return;const zip=new JSZip();for(const i of indices){const blob=chunks[i];const ext=getExtension(blob);zip.file(`track_${String(i+1).padStart(3,"0")}.${ext}`,blob)}const zipBlob=await zip.generateAsync({type:"blob",compression:"DEFLATE",compressionOptions:{level:6}});const url=URL.createObjectURL(zipBlob),a=document.createElement("a");a.href=url;a.download=useAll?"audioscript_all_tracks.zip":"audioscript_selected_tracks.zip";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+async function generateAudio(useAll,preview=false){const gap=parseInt(document.getElementById("gap").value)||0;const ctx=new AudioContext();let buffers=[];for(let i=0;i<parts.length;i++){if(!chunks[i])continue;if(!useAll&&!toggles[i])continue;const buffer=await ctx.decodeAudioData(await chunks[i].arrayBuffer());buffers.push(buffer)}if(!buffers.length)return;let totalLength=buffers.reduce((a,b)=>a+b.length,0)+(gap/1000*ctx.sampleRate*buffers.length);let output=ctx.createBuffer(1,totalLength,ctx.sampleRate),offset=0;buffers.forEach(b=>{output.getChannelData(0).set(b.getChannelData(0),offset);offset+=b.length+(gap/1000*ctx.sampleRate)});const wav=bufferToWav(output),blob=new Blob([wav],{type:"audio/wav"});if(preview){document.getElementById("previewPlayer").src=URL.createObjectURL(blob);return}const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="final.wav";a.click();URL.revokeObjectURL(url)}
+function bufferToWav(buffer){let length=buffer.length*2+44,arr=new ArrayBuffer(length),view=new DataView(arr);function write(v,o,s){for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i))}write(view,0,"RIFF");view.setUint32(4,36+buffer.length*2,true);write(view,8,"WAVE");write(view,12,"fmt ");view.setUint32(16,16,true);view.setUint16(20,1,true);view.setUint16(22,1,true);view.setUint32(24,buffer.sampleRate,true);view.setUint32(28,buffer.sampleRate*2,true);view.setUint16(32,2,true);view.setUint16(34,16,true);write(view,36,"data");view.setUint32(40,buffer.length*2,true);let offset=44,data=buffer.getChannelData(0);for(let i=0;i<data.length;i++,offset+=2){let s=Math.max(-1,Math.min(1,data[i]));view.setInt16(offset,s<0?s*0x8000:s*0x7FFF,true)}return arr}
+function blobToBase64(blob){return new Promise(r=>{const reader=new FileReader();reader.onloadend=()=>r(reader.result);reader.readAsDataURL(blob)})}
+function base64ToBlob(base64){const arr=base64.split(','),mime=arr[0].match(/:(.*?);/)[1],bstr=atob(arr[1]);let n=bstr.length;const u8=new Uint8Array(n);while(n--)u8[n]=bstr.charCodeAt(n);return new Blob([u8],{type:mime})}
 </script>
-
 </body>
 </html>
