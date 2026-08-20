@@ -13,7 +13,7 @@ button{margin:4px 4px 4px 0;padding:6px 10px;font-size:13px;border:none;border-r
 .part{border:1px solid #333;padding:12px;margin:20px 0;border-radius:10px}.controls{margin-top:10px;display:flex;flex-wrap:wrap;gap:4px}audio{width:100%;margin-top:10px}
 .comment{border:1px dashed #444;padding:12px;margin:30px 0;color:#aaa;font-style:italic;border-radius:8px}
 .preview{position:fixed;bottom:10px;right:10px;width:300px;border:1px solid #444;padding:12px;border-radius:12px;background:#0a0a0a;box-shadow:0 0 10px rgba(0,0,0,.8);z-index:999}
-.exportMenu{display:none;flex-direction:column;gap:4px;margin-top:6px;padding:8px;border:1px solid #333;border-radius:8px;background:#111}.exportMenu button{width:100%;text-align:left;margin:0}.exportMenu.open{display:flex}
+.previewControls{position:relative;display:flex;align-items:flex-start;gap:4px;flex-wrap:wrap}.exportWrap{position:static}.exportMenu{display:none;position:absolute;left:0;top:100%;flex-direction:column;gap:4px;margin-top:6px;padding:8px;border:1px solid #333;border-radius:8px;background:#111;z-index:1000;min-width:180px}.exportMenu button{width:100%;text-align:left;margin:0}.exportMenu.open{display:flex}
 </style>
 </head>
 <body>
@@ -27,9 +27,9 @@ Create comments using '//' before the comment"></textarea>
 <div class="preview">
 <h3 title="Preview of selected audio segments">Preview</h3>
 <audio controls id="previewPlayer"></audio>
-<div class="controls">
+<div class="previewControls">
 <button title="Refresh preview manually" onclick="updatePreview()">🔄</button>
-<div><button title="Choose an export format" onclick="toggleExportMenu()">Export</button>
+<div class="exportWrap"><button title="Choose an export format" onclick="toggleExportMenu()">Export</button>
 <div class="exportMenu" id="exportMenu">
 <button onclick="exportMerged(false)">Export Selected Audio</button>
 <button onclick="exportMerged(true)">Export All Audio</button>
@@ -39,7 +39,7 @@ Create comments using '//' before the comment"></textarea>
 </div>
 </div>
 <hr style="border:0;border-top:1px solid #222;margin-top:40px;">
-<footer style="margin-top:20px;font-size:14px;color:#888;text-align:center;">made with AI (chatGPT), <a href="https://github.com/jhonny1307/audioscript-web" target="_blank" style="color:#aaa;">project file (v12.1.1)</a></footer>
+<footer style="margin-top:20px;font-size:14px;color:#888;text-align:center;">made with AI (chatGPT), <a href="https://github.com/jhonny1307/audioscript-web" target="_blank" style="color:#aaa;">project file (v12.1.2)</a></footer>
 <script>
 function vibrate(){if(navigator.vibrate)navigator.vibrate(30)}
 document.addEventListener("click",vibrate);
