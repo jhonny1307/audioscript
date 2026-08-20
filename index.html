@@ -12,8 +12,8 @@ textarea,input{width:100%;margin-bottom:10px;font-size:14px;border-radius:6px;ba
 button{margin:4px 4px 4px 0;padding:6px 10px;font-size:13px;border:none;border-radius:6px;background:#111;color:#eee;cursor:pointer;transition:.2s}button:hover{background:#222}
 .part{border:1px solid #333;padding:12px;margin:20px 0;border-radius:10px}.controls{margin-top:10px;display:flex;flex-wrap:wrap;gap:4px}audio{width:100%;margin-top:10px}
 .comment{border:1px dashed #444;padding:12px;margin:30px 0;color:#aaa;font-style:italic;border-radius:8px}
-.preview{position:fixed;bottom:10px;right:10px;width:300px;border:1px solid #444;padding:12px;border-radius:12px;background:#0a0a0a;box-shadow:0 0 10px rgba(0,0,0,.8);z-index:999;overflow:visible}
-.previewControls{display:flex;align-items:flex-start;gap:4px;position:relative}.exportWrap{position:relative;display:inline-block}.exportMenu{display:none;position:absolute;top:100%;left:0;flex-direction:column;gap:4px;margin-top:4px;padding:8px;border:1px solid #333;border-radius:8px;background:#111;z-index:1001;min-width:190px;box-sizing:border-box}.exportMenu button{width:100%;text-align:left;margin:0}.exportMenu.open{display:flex}
+.preview{position:fixed;bottom:10px;right:10px;width:300px;border:1px solid #444;padding:12px;border-radius:12px;background:#0a0a0a;box-shadow:0 0 10px rgba(0,0,0,.8);z-index:999;box-sizing:border-box}
+.previewControls{display:flex;align-items:flex-start;gap:4px}.exportMenu{display:none;flex-direction:column;gap:4px;margin-top:4px;padding:8px;border:1px solid #333;border-radius:8px;background:#111;z-index:1000;width:100%;box-sizing:border-box}.exportMenu button{width:100%;text-align:left;margin:0}.exportMenu.open{display:flex}
 </style>
 </head>
 <body>
@@ -29,13 +29,13 @@ Create comments using '//' before the comment"></textarea>
 <audio controls id="previewPlayer"></audio>
 <div class="previewControls">
 <button title="Refresh preview manually" onclick="updatePreview()">🔄</button>
-<div class="exportWrap"><button title="Choose an export format" onclick="toggleExportMenu()">Export</button>
+<button title="Choose an export format" onclick="toggleExportMenu()">Export</button>
+</div>
 <div class="exportMenu" id="exportMenu">
 <button onclick="exportMerged(false)">Export Selected Audio</button>
 <button onclick="exportMerged(true)">Export All Audio</button>
 <button onclick="exportZip(false)">Export Selected ZIP</button>
 <button onclick="exportZip(true)">Export All ZIP</button>
-</div></div>
 </div>
 </div>
 <hr style="border:0;border-top:1px solid #222;margin-top:40px;">
