@@ -21,18 +21,21 @@ Long answer: yes… and it kept getting better.
 * ❤️ Toggle favorite segments (include/exclude in preview/export)
 * 🎧 Real-time preview of selected segments
 * 📥 Download individual audio tracks
+* 📦 Export selected tracks as a ZIP
+* 📦 Export all tracks as a ZIP
+* 🔊 Merge selected segments into a single `.wav` file
+* 🔀 Export all segments into a single `.wav` file
+* ⏱️ Configurable gap between segments for merged audio
 * 🧠 Automatic saving (no save button needed)
 * 💾 Persistent storage using `localStorage`
 * 🧹 One-click project reset
 * 🧩 Inline comments using `//`
-
   * Displayed as visual notes (not audio)
-* 🔊 Merge segments into a single `.wav` file
-* 🔀 Option to export all segments (ignore toggle)
-* ⏱️ Configurable gap between segments
 * 📱 Mobile-friendly interactions (including vibration feedback)
 * 🎨 Clean UI with improved readability and structure
 * 📌 Floating preview player (always visible)
+* 🔄 Manual preview refresh
+* 🎛️ Unified export menu with four export options
 
 ---
 
@@ -40,20 +43,32 @@ Long answer: yes… and it kept getting better.
 
 1. Paste your script into the text box
 2. Add comments using `//` when needed:
-```
+
+```text
 Line 1
 Line 2
 // pause here
 Line 3
 ```
+
 3. Click **Split**
 4. Record or upload audio for each segment
 5. Optionally mark preferred segments using the toggle
-6. Use the **Preview player** to listen before exporting
-7. Download:
-   - **Download Selected** (only marked segments)
-   - **Download All** (ignores toggle)
+6. Use the **Preview** player to listen before exporting
+7. Click **Export** to choose between:
+   - **Export Selected Audio** — merges only marked segments into one `.wav`
+   - **Export All Audio** — merges all available segments into one `.wav`
+   - **Export Selected ZIP** — exports marked segments individually inside a `.zip`
+   - **Export All ZIP** — exports all segments individually inside a `.zip`
 8. Individual tracks can also be downloaded separately
+
+### 🎧 Preview vs Export
+
+The **Preview** player uses the selected segments and applies the configured gap between them.
+
+The merged audio exports use the same gap configuration.
+
+ZIP exports are different: each segment remains a separate audio file, so there is **no gap added between tracks**.
 
 ---
 
@@ -63,6 +78,7 @@ Line 3
 * Uses browser `localStorage`
 * No accounts, no backend, no tracking
 * Reopening the page restores your project instantly
+* Recorded audio is normalized when necessary to ensure reliable duration information
 
 ---
 
@@ -85,8 +101,9 @@ There is only regret.
 * JavaScript (Vanilla)
 * Web Audio API
 * MediaRecorder API
+* JSZip
 
-No frameworks. No dependencies. No excuses.
+No frameworks. No unnecessary dependencies. No excuses.
 
 ---
 
@@ -108,7 +125,7 @@ This project came from a simple experiment:
 
 > Take an existing idea  
 > Rebuild it using AI  
-> Keep improving it until it stops being simple  
+> Keep improving it until it stops being simple
 
 Somewhere between curiosity and chaos… this happened.
 
@@ -123,13 +140,27 @@ Built with the help of [**ChatGPT**](https://chatgpt.com/share/69efb636-ea20-83e
 ## 📜 License
 
 Do whatever you want with it.  
-Seriously.
+Seriously... or no... or yes...
 
 ---
 
-## 📌 Latest Update - V11.1  
-**Date:** `27/04/2026`
+## 📌 Latest Update - V12.1.5
 
-| ➕ Added | 🔧 Modified | ➖ Removed |
+**Date:** `20/08/2026`
+
+| ➕ Added | 🔧 Modified | 🐛 Fixed |
 |---|---|---|
-| Floating preview player<br>Manual preview refresh button (🔄)<br>Per-track download button | Preview system redesigned (real-time updates)<br>Audio generation split into preview/export logic<br>Preview now updates on stop, upload, toggle, and gap change<br>Layout updated to support fixed preview<br>Extra bottom spacing for UI safety | Generate final audio button |
+| ZIP export for selected tracks<br>ZIP export for all tracks<br>Unified export menu | Preview/export layout redesigned<br>Export menu moved inside the floating Preview panel<br>Manual preview refresh retained<br>Recorded audio normalized to WAV when necessary | Incorrect duration displayed by recorded audio players<br>Export menu positioning and Preview panel layout |
+
+### Export System
+
+The export system now provides four options:
+
+1. **Selected Audio** — merged `.wav` containing only selected tracks
+2. **All Audio** — merged `.wav` containing all tracks
+3. **Selected ZIP** — ZIP containing selected tracks as individual audio files
+4. **All ZIP** — ZIP containing all tracks as individual audio files
+
+Merged exports respect the configured gap between tracks.
+
+ZIP exports contain the original tracks separately and do not add artificial delays between them.
